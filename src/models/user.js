@@ -1,14 +1,20 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
       required: true,
+      minlength: 2,
+      maxLength: 30,
     },
     lastName: {
       type: String,
+      minlength: 2,
+      maxLength: 30,
     },
     emailId: {
       type: String,
@@ -37,6 +43,7 @@ const userSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
+      enum: ["male", "female", "other"],
       validate(value) {
         if (
           ["male", "female", "other"].includes(value.toLowerCase()) === false
@@ -65,6 +72,20 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+userSchema.methods.getJWT = async function () {
+  const user = this;
+  const token = await jwt.sign({ _id: user._id }, "DEVTINDER_SECRET", {
+    expiresIn: "7d",
+  });
+  return token;
+};
+
+userSchema.methods.validatePassword = async function (passwordInputByUser) {
+  const user = this;
+  const passwordHash = await bcrypt.compare(passwordInputByUser, user.password);
+  return passwordHash;
+};
 
 const User = mongoose.model("User", userSchema);
 
